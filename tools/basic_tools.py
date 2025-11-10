@@ -9,7 +9,7 @@ from smolagents import tool
 
 
 @tool
-def read_csv(file_path: str, n: int = 5) -> str:
+def read_csv(file_path: str, n: int = 5) -> pd.DataFrame:
     """
     Reads a CSV file and returns its first few rows.
 
@@ -18,17 +18,14 @@ def read_csv(file_path: str, n: int = 5) -> str:
         n: Number of rows to display (default: 5).
 
     Returns:
-        The first few rows of the dataframe as a string.
+        The first few rows of the dataframe as a pandas DataFrame.
     """
     df = pd.read_csv(file_path)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_colwidth', 50)
-    return str(df.head(n))
+    return df.head(n)
 
 
 @tool
-def get_csv_info(file_path: str) -> str:
+def get_csv_info(file_path: str) -> pd.DataFrame:
     """
     Returns comprehensive info about the CSV file including shape, columns, dtypes, and missing values.
 
@@ -36,32 +33,32 @@ def get_csv_info(file_path: str) -> str:
         file_path: Path to the CSV file.
 
     Returns:
-        Detailed CSV information including row count, column count, data types, and null counts.
+        Detailed CSV information as a DataFrame with column details.
     """
     df = pd.read_csv(file_path)
     
-    info_str = f"""
-CSV File Information:
-=====================
-Total Rows: {len(df)}
-Total Columns: {len(df.columns)}
-
-Column Details:
----------------
-"""
+    # Create info DataFrame
+    info_data = []
     for idx, col in enumerate(df.columns):
         non_null = df[col].count()
         null_count = df[col].isna().sum()
         dtype = df[col].dtype
-        info_str += f"{idx}. {col}: {non_null}/{len(df)} non-null ({null_count} missing), dtype: {dtype}\n"
+        info_data.append({
+            'Column': col,
+            'Non_Null': non_null,
+            'Total_Rows': len(df),
+            'Missing': null_count,
+            'Data_Type': str(dtype)
+        })
     
-    info_str += f"\nMemory Usage: {df.memory_usage(deep=True).sum() / 1024:.1f} KB"
+    info_df = pd.DataFrame(info_data)
+    info_df['Memory_Usage_KB'] = df.memory_usage(deep=True).sum() / 1024
     
-    return info_str
+    return info_df
 
 
 @tool
-def get_column_names(file_path: str) -> str:
+def get_column_names(file_path: str) -> pd.DataFrame:
     """
     Returns just the column names from the CSV file.
 
@@ -69,14 +66,18 @@ def get_column_names(file_path: str) -> str:
         file_path: Path to the CSV file.
 
     Returns:
-        List of column names as a comma-separated string.
+        DataFrame with column names and their indices.
     """
     df = pd.read_csv(file_path)
-    return f"Columns ({len(df.columns)}): {', '.join(df.columns.tolist())}"
+    columns_df = pd.DataFrame({
+        'Index': range(len(df.columns)),
+        'Column_Name': df.columns.tolist()
+    })
+    return columns_df
 
 
 @tool
-def append_to_csv(file_path: str, data: dict) -> str:
+def append_to_csv(file_path: str, data: dict) -> pd.DataFrame:
     """
     Appends a dictionary as a new row to a CSV file.
 
@@ -85,15 +86,15 @@ def append_to_csv(file_path: str, data: dict) -> str:
         data: Key-value pairs corresponding to columns and values.
 
     Returns:
-        Confirmation message after appending.
+        DataFrame showing the appended data.
     """
     df = pd.DataFrame([data])
     df.to_csv(file_path, mode="a", header=False, index=False)
-    return f"✅ Data appended successfully to {file_path}"
+    return df
 
 
 @tool
-def search_csv(file_path: str, column: str, value: str, n: int = 5) -> str:
+def search_csv(file_path: str, column: str, value: str, n: int = 5) -> pd.DataFrame:
     """
     Searches for rows where a given column matches a value.
 
@@ -104,29 +105,29 @@ def search_csv(file_path: str, column: str, value: str, n: int = 5) -> str:
         n: Number of matching rows to return.
 
     Returns:
-        Matching rows as a string with count information.
+        DataFrame with matching rows.
     """
     df = pd.read_csv(file_path)
     if column not in df.columns:
-        return f"❌ Column '{column}' not found in CSV. Available columns: {', '.join(df.columns)}"
+        # Return error info as DataFrame
+        error_df = pd.DataFrame({
+            'Error': [f"Column '{column}' not found"],
+            'Available_Columns': [', '.join(df.columns)]
+        })
+        return error_df
     
     matches = df[df[column].astype(str).str.contains(value, case=False, na=False)]
     
     if matches.empty:
-        return "⚠️ No matching records found."
+        # Return empty DataFrame with info
+        empty_df = pd.DataFrame({'Message': ['No matching records found']})
+        return empty_df
     
-    result_df = matches.head(n).reset_index(drop=True)
-    
-    with pd.option_context('display.max_columns', None, 
-                          'display.width', 1000,
-                          'display.max_colwidth', 40):
-        output = f"Found {len(matches)} matching rows. Showing first {len(result_df)}:\n\n{str(result_df)}"
-    
-    return output
+    return matches.head(n).reset_index(drop=True)
 
 
 @tool
-def describe_csv(file_path: str) -> str:
+def describe_csv(file_path: str) -> pd.DataFrame:
     """
     Returns a statistical summary of numeric columns in the CSV file.
 
@@ -134,9 +135,7 @@ def describe_csv(file_path: str) -> str:
         file_path: Path to the CSV file.
 
     Returns:
-        Summary statistics for all numeric columns.
+        Summary statistics DataFrame for all numeric columns.
     """
     df = pd.read_csv(file_path)
-    with pd.option_context('display.max_columns', None,
-                          'display.width', 1000):
-        return str(df.describe())
+    return df.describe()

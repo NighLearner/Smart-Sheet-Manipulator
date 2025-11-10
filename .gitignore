@@ -1,23 +1,178 @@
-# Python artifacts
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Local data outputs
-resultant/
-*.csv
+# C extensions
+*.so
 
-# Virtual envs
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
 .env
 .venv
 env/
 venv/
+ENV/
+env.bak/
+venv.bak/
 
-# IDE settings
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
 
-# Logs and temp files
-*.log
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Project-specific
+# Output directory for generated CSV files
+resultant/
+answers/
+
+# Input data files (uncomment if you don't want to track CSV files)
+# *.csv
+
+# Large data files (uncomment if you have large CSV files)
+# *.csv
+# !requirements.txt  # Keep requirements.txt if you uncomment this
+
+# Temporary and test files
 *.tmp
+*.temp
+*.bak
+*.backup
+
+# Temporary documentation files (uncomment if needed)
+# DYNAMIC_IMPLEMENTATION_COMPLETE.md
+# FINAL_IMPLEMENTATION_SUMMARY.md
+# SETUP_COMPLETE.md
+
+# Logs
+*.log
+logs/
+
+# Ollama models cache (if stored locally)
+.ollama/
+
+# Model outputs and artifacts
+models/
+artifacts/
+outputs/
 

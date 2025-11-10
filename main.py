@@ -4,19 +4,12 @@
 """
 Main entry point for the CSV manipulator application.
 """
-from pathlib import Path
-
-from agent.enhanced_csv_agent import run_with_data_inspection
+from agent.enhanced_csv_agent_v2 import run_with_data_inspection_v2
 from examples.test_tracker import run_basic_tests_with_tracking, run_comprehensive_tests_with_tracking
 from examples.titanic_test_suite import run_titanic_comprehensive_tests
+from dynamic_prompt_template import create_smart_prompt_template
+from enhanced_test_tracker import run_enhanced_basic_tests
 import config
-
-
-APP_DIR = Path(__file__).resolve().parent
-config.TRAIN_CSV = str(APP_DIR / "train.csv")
-config.TEST_CSV = str(APP_DIR / "test.csv")
-config.OUTPUT_DIR = str(APP_DIR / "resultant")
-Path(config.OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 
 def interactive_mode():
@@ -57,12 +50,13 @@ def interactive_mode():
 
 def enhanced_interactive_mode():
     """
-    Run the enhanced agent in interactive mode with automatic df.info() and df.describe() integration.
+    Run the enhanced agent in interactive mode with dynamic dataset information.
     """
     print("\n" + "="*80)
-    print("CSV MANIPULATOR - Enhanced Interactive Mode")
+    print("CSV MANIPULATOR - Enhanced Interactive Mode V2")
     print("="*80)
     print("Enhanced mode automatically includes df.info() and df.describe() for better accuracy.")
+    print("All CSV output files will be saved in the 'answers' directory.")
     print("Type your CSV manipulation queries below.")
     print("Type 'exit' or 'quit' to stop.\n")
     
@@ -77,8 +71,16 @@ def enhanced_interactive_mode():
             if not query:
                 continue
             
-            print("\n🤖 Processing with enhanced data inspection...")
-            result = run_with_data_inspection(query, max_steps=config.MAX_STEPS)
+            print("\n🤖 Processing with dynamic dataset information...")
+            
+            # Create dynamic prompt with dataset information
+            enhanced_query = create_smart_prompt_template(query)
+            
+            # Use the enhanced agent directly instead of run_with_data_inspection_v2
+            from agent.enhanced_csv_agent_v2 import get_enhanced_agent_v2
+            agent = get_enhanced_agent_v2()
+            result = agent.run(enhanced_query, max_steps=config.MAX_STEPS)
+            
             print(f"\n✅ Result:\n{result}")
             
         except KeyboardInterrupt:
@@ -96,18 +98,18 @@ def main():
     print("CSV MANIPULATOR WITH AI AGENT")
     print("="*80)
     print("\nChoose a mode:")
-    print("1. Run basic tests with tracking")
+    print("1. Run enhanced basic tests with dynamic prompts")
     print("2. Run comprehensive tests with tracking")
     print("3. Run Titanic dataset comprehensive tests")
     print("4. Interactive mode")
-    print("5. Enhanced Interactive mode (with automatic df.info() and df.describe())")
+    print("5. Enhanced Interactive mode V2 (with DataFrame returns and 3-step limit)")
     print("6. Exit")
     
     choice = input("\nEnter your choice (1-6): ").strip()
     
     if choice == "1":
-        print("\nRunning basic tests with comprehensive tracking...")
-        run_basic_tests_with_tracking()
+        print("\nRunning enhanced basic tests with dynamic prompts...")
+        run_enhanced_basic_tests()
     elif choice == "2":
         print("\nRunning comprehensive tests with detailed tracking...")
         run_comprehensive_tests_with_tracking()

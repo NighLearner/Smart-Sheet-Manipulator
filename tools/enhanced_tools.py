@@ -11,7 +11,7 @@ from smolagents import tool
 
 
 @tool
-def enhanced_read_csv(file_path: str, n: int = 5) -> str:
+def enhanced_read_csv(file_path: str, n: int = 5) -> pd.DataFrame:
     """
     Enhanced CSV reader that automatically includes df.info() and df.describe() information.
     This helps the AI agent understand the data structure for better code generation.
@@ -21,60 +21,29 @@ def enhanced_read_csv(file_path: str, n: int = 5) -> str:
         n: Number of rows to display (default: 5).
 
     Returns:
-        The first few rows of the dataframe plus comprehensive data structure information.
+        DataFrame with first few rows plus comprehensive data structure information.
     """
     df = pd.read_csv(file_path)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', None)
-    pd.set_option('display.max_colwidth', 50)
     
     # Get basic data preview
-    data_preview = str(df.head(n))
+    data_preview = df.head(n)
     
-    # Get comprehensive data structure information
-    info_section = f"""
-
-=== AUTOMATIC DATA STRUCTURE ANALYSIS ===
-📊 Dataset Shape: {df.shape[0]} rows × {df.shape[1]} columns
-📋 Column Information:
-"""
+    # Add metadata as additional columns
+    metadata_df = pd.DataFrame({
+        'Dataset_Shape': [f"{df.shape[0]} rows × {df.shape[1]} columns"],
+        'Memory_Usage_KB': [df.memory_usage(deep=True).sum() / 1024],
+        'Data_Types': [str(dict(df.dtypes))],
+        'Null_Counts': [str(dict(df.isnull().sum()))]
+    })
     
-    for idx, col in enumerate(df.columns):
-        non_null = df[col].count()
-        null_count = df[col].isna().sum()
-        dtype = df[col].dtype
-        info_section += f"  {idx+1}. {col}: {non_null}/{len(df)} non-null ({null_count} missing), dtype: {dtype}\n"
+    # Combine preview with metadata
+    result_df = pd.concat([data_preview, metadata_df], axis=1)
     
-    # Add data types summary
-    info_section += f"\n📈 Data Types Summary:\n"
-    dtype_counts = df.dtypes.value_counts()
-    for dtype, count in dtype_counts.items():
-        info_section += f"  - {dtype}: {count} columns\n"
-    
-    # Add categorical column unique values (first 5 columns)
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    if len(categorical_cols) > 0:
-        info_section += f"\n🏷️ Categorical Columns Unique Values (sample):\n"
-        for col in categorical_cols[:3]:  # Show first 3 categorical columns
-            unique_vals = df[col].dropna().unique()[:5]  # First 5 unique values
-            info_section += f"  - {col}: {list(unique_vals)}\n"
-    
-    # Add numeric column statistics
-    numeric_cols = df.select_dtypes(include=['number']).columns
-    if len(numeric_cols) > 0:
-        info_section += f"\n📊 Numeric Columns Statistics:\n"
-        numeric_summary = df[numeric_cols].describe()
-        info_section += f"{numeric_summary}\n"
-    
-    info_section += "\n=== END DATA STRUCTURE ANALYSIS ===\n"
-    info_section += "💡 Use this information to write accurate code that matches the actual data structure.\n"
-    info_section += "🔧 CODING TIP: Avoid unnecessary imports - use the provided enhanced tools instead of direct pandas operations.\n"
-    
-    return data_preview + info_section
+    return result_df
 
 
 @tool
-def enhanced_get_csv_info(file_path: str) -> str:
+def enhanced_get_csv_info(file_path: str) -> pd.DataFrame:
     """
     Enhanced CSV info that provides comprehensive data structure analysis.
     This includes df.info() equivalent plus df.describe() for better code generation.
@@ -83,63 +52,52 @@ def enhanced_get_csv_info(file_path: str) -> str:
         file_path: Path to the CSV file.
 
     Returns:
-        Detailed CSV information with enhanced data structure analysis.
+        DataFrame with detailed CSV information and enhanced data structure analysis.
     """
     df = pd.read_csv(file_path)
     
-    info_str = f"""
-=== ENHANCED CSV FILE ANALYSIS ===
-📊 Dataset Overview:
-   Total Rows: {len(df)}
-   Total Columns: {len(df.columns)}
-   Memory Usage: {df.memory_usage(deep=True).sum() / 1024:.1f} KB
-
-📋 Detailed Column Analysis:
-"""
-    
+    # Create comprehensive info DataFrame
+    info_data = []
     for idx, col in enumerate(df.columns):
         non_null = df[col].count()
         null_count = df[col].isna().sum()
         dtype = df[col].dtype
-        info_str += f"   {idx+1}. {col}: {non_null}/{len(df)} non-null ({null_count} missing), dtype: {dtype}\n"
-    
-    # Add data types distribution
-    info_str += f"\n📈 Data Types Distribution:\n"
-    dtype_counts = df.dtypes.value_counts()
-    for dtype, count in dtype_counts.items():
-        info_str += f"   - {dtype}: {count} columns\n"
-    
-    # Add categorical analysis
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    if len(categorical_cols) > 0:
-        info_str += f"\n🏷️ Categorical Columns Analysis:\n"
-        for col in categorical_cols:
-            unique_count = df[col].nunique()
-            most_common = df[col].mode().iloc[0] if not df[col].mode().empty else "N/A"
-            info_str += f"   - {col}: {unique_count} unique values, most common: '{most_common}'\n"
-    
-    # Add numeric analysis
-    numeric_cols = df.select_dtypes(include=['number']).columns
-    if len(numeric_cols) > 0:
-        info_str += f"\n📊 Numeric Columns Statistical Summary:\n"
-        numeric_summary = df[numeric_cols].describe()
-        info_str += f"{numeric_summary}\n"
+        unique_count = df[col].nunique()
         
-        # Add correlation information for numeric columns
-        if len(numeric_cols) > 1:
-            info_str += f"\n🔗 Numeric Columns Correlation Matrix:\n"
-            correlation_matrix = df[numeric_cols].corr()
-            info_str += f"{correlation_matrix}\n"
+        # Get most common value for categorical columns
+        most_common = "N/A"
+        if df[col].dtype == 'object' and not df[col].mode().empty:
+            most_common = df[col].mode().iloc[0]
+        
+        info_data.append({
+            'Column': col,
+            'Non_Null': non_null,
+            'Total_Rows': len(df),
+            'Missing': null_count,
+            'Data_Type': str(dtype),
+            'Unique_Values': unique_count,
+            'Most_Common': str(most_common)
+        })
     
-    info_str += "\n=== END ENHANCED ANALYSIS ===\n"
-    info_str += "💡 This comprehensive analysis helps ensure accurate code generation.\n"
-    info_str += "🔧 CODING TIP: Use the enhanced tools instead of direct pandas imports for better results.\n"
+    info_df = pd.DataFrame(info_data)
     
-    return info_str
+    # Add dataset-level metadata
+    metadata_df = pd.DataFrame({
+        'Metric': ['Total_Rows', 'Total_Columns', 'Memory_Usage_KB', 'Numeric_Columns', 'Categorical_Columns'],
+        'Value': [
+            len(df),
+            len(df.columns),
+            df.memory_usage(deep=True).sum() / 1024,
+            len(df.select_dtypes(include=['number']).columns),
+            len(df.select_dtypes(include=['object']).columns)
+        ]
+    })
+    
+    return info_df
 
 
 @tool
-def enhanced_search_csv(file_path: str, column: str, value: str, n: int = 5) -> str:
+def enhanced_search_csv(file_path: str, column: str, value: str, n: int = 5) -> pd.DataFrame:
     """
     Enhanced CSV search that includes data structure context for better filtering.
     Automatically provides df.info() and df.describe() context.
@@ -151,57 +109,54 @@ def enhanced_search_csv(file_path: str, column: str, value: str, n: int = 5) -> 
         n: Number of matching rows to return.
 
     Returns:
-        Matching rows plus data structure context for accurate filtering.
+        DataFrame with matching rows plus data structure context.
     """
     df = pd.read_csv(file_path)
     
-    # First, provide data structure context
-    context_info = f"""
-=== DATA STRUCTURE CONTEXT FOR SEARCH ===
-📊 Dataset: {df.shape[0]} rows × {df.shape[1]} columns
-📋 Available columns: {', '.join(df.columns.tolist())}
-"""
-    
     if column not in df.columns:
-        return f"❌ Column '{column}' not found in CSV.\n{context_info}\nAvailable columns: {', '.join(df.columns)}"
+        error_df = pd.DataFrame({
+            'Error': [f"Column '{column}' not found"],
+            'Available_Columns': [', '.join(df.columns.tolist())],
+            'Dataset_Shape': [f"{df.shape[0]} rows × {df.shape[1]} columns"]
+        })
+        return error_df
     
     # Add column-specific information
     col_dtype = df[column].dtype
     col_nulls = df[column].isna().sum()
     col_unique = df[column].nunique()
     
-    context_info += f"🎯 Target Column '{column}':\n"
-    context_info += f"   - Data type: {col_dtype}\n"
-    context_info += f"   - Null values: {col_nulls}\n"
-    context_info += f"   - Unique values: {col_unique}\n"
-    
-    if col_dtype == 'object':
-        unique_vals = df[column].dropna().unique()[:10]
-        context_info += f"   - Sample values: {list(unique_vals)}\n"
-    else:
-        col_stats = df[column].describe()
-        context_info += f"   - Statistics: {col_stats}\n"
-    
-    context_info += "\n=== END CONTEXT ===\n"
-    
     # Perform the search
     matches = df[df[column].astype(str).str.contains(value, case=False, na=False)]
     
     if matches.empty:
-        return f"⚠️ No matching records found.\n{context_info}\n💡 Check the data type and unique values above to refine your search."
+        empty_df = pd.DataFrame({
+            'Message': ['No matching records found'],
+            'Column_Type': [str(col_dtype)],
+            'Unique_Values': [col_unique],
+            'Null_Count': [col_nulls]
+        })
+        return empty_df
     
     result_df = matches.head(n).reset_index(drop=True)
     
-    with pd.option_context('display.max_columns', None, 
-                          'display.width', 1000,
-                          'display.max_colwidth', 40):
-        output = f"{context_info}\n🔍 Search Results:\nFound {len(matches)} matching rows. Showing first {len(result_df)}:\n\n{str(result_df)}"
+    # Add metadata about the search
+    metadata_df = pd.DataFrame({
+        'Search_Column': [column],
+        'Search_Value': [value],
+        'Total_Matches': [len(matches)],
+        'Column_Type': [str(col_dtype)],
+        'Column_Unique_Values': [col_unique]
+    })
     
-    return output
+    # Combine results with metadata
+    combined_df = pd.concat([result_df, metadata_df], axis=1)
+    
+    return combined_df
 
 
 @tool
-def enhanced_describe_csv(file_path: str) -> str:
+def enhanced_describe_csv(file_path: str) -> pd.DataFrame:
     """
     Enhanced CSV description with comprehensive statistical analysis.
     Provides df.describe() plus additional insights for better understanding.
@@ -210,60 +165,65 @@ def enhanced_describe_csv(file_path: str) -> str:
         file_path: Path to the CSV file.
 
     Returns:
-        Enhanced statistical summary with data structure insights.
+        DataFrame with enhanced statistical summary and data structure insights.
     """
     df = pd.read_csv(file_path)
     
     # Basic describe() output
-    with pd.option_context('display.max_columns', None,
-                          'display.width', 1000):
-        basic_describe = str(df.describe())
+    basic_describe = df.describe()
     
     # Enhanced analysis
-    enhanced_info = f"""
-=== ENHANCED STATISTICAL ANALYSIS ===
-📊 Dataset Overview: {df.shape[0]} rows × {df.shape[1]} columns
-
-📈 Standard Statistical Summary:
-{basic_describe}
-
-🔍 Additional Insights:
-"""
-    
-    # Add data type specific analysis
     numeric_cols = df.select_dtypes(include=['number']).columns
     categorical_cols = df.select_dtypes(include=['object']).columns
     
+    # Create enhanced summary DataFrame
+    enhanced_data = []
+    
+    # Add numeric column analysis
     if len(numeric_cols) > 0:
-        enhanced_info += f"\n📊 Numeric Columns ({len(numeric_cols)}):\n"
         for col in numeric_cols:
             col_info = df[col].describe()
-            enhanced_info += f"   {col}: mean={col_info['mean']:.2f}, std={col_info['std']:.2f}, range=[{col_info['min']:.2f}, {col_info['max']:.2f}]\n"
+            enhanced_data.append({
+                'Column': col,
+                'Type': 'Numeric',
+                'Mean': col_info['mean'],
+                'Std': col_info['std'],
+                'Min': col_info['min'],
+                'Max': col_info['max'],
+                'Count': col_info['count']
+            })
     
+    # Add categorical column analysis
     if len(categorical_cols) > 0:
-        enhanced_info += f"\n🏷️ Categorical Columns ({len(categorical_cols)}):\n"
         for col in categorical_cols:
             unique_count = df[col].nunique()
             null_count = df[col].isna().sum()
             most_common = df[col].mode().iloc[0] if not df[col].mode().empty else "N/A"
-            enhanced_info += f"   {col}: {unique_count} unique values, {null_count} nulls, most common: '{most_common}'\n"
+            enhanced_data.append({
+                'Column': col,
+                'Type': 'Categorical',
+                'Unique_Values': unique_count,
+                'Null_Count': null_count,
+                'Most_Common': most_common,
+                'Count': df[col].count()
+            })
+    
+    enhanced_df = pd.DataFrame(enhanced_data)
     
     # Add missing data analysis
     missing_data = df.isnull().sum()
     if missing_data.sum() > 0:
-        enhanced_info += f"\n⚠️ Missing Data Analysis:\n"
-        for col, missing_count in missing_data.items():
-            if missing_count > 0:
-                percentage = (missing_count / len(df)) * 100
-                enhanced_info += f"   {col}: {missing_count} missing ({percentage:.1f}%)\n"
-    else:
-        enhanced_info += f"\n✅ No missing data found in any column.\n"
+        missing_df = pd.DataFrame({
+            'Column': missing_data.index,
+            'Missing_Count': missing_data.values,
+            'Missing_Percentage': [(count / len(df)) * 100 for count in missing_data.values]
+        })
+        missing_df = missing_df[missing_df['Missing_Count'] > 0]
+        
+        # Combine with enhanced data
+        enhanced_df = pd.concat([enhanced_df, missing_df], ignore_index=True)
     
-    enhanced_info += "\n=== END ENHANCED ANALYSIS ===\n"
-    enhanced_info += "💡 Use this comprehensive analysis to write accurate data manipulation code.\n"
-    enhanced_info += "🔧 CODING TIP: Prefer enhanced tools over direct pandas imports for better integration.\n"
-    
-    return enhanced_info
+    return enhanced_df
 
 
 @tool
