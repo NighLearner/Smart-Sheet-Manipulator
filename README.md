@@ -10,6 +10,7 @@ An AI-powered CSV manipulation tool that uses natural language queries to perfor
 - **Enhanced Data Inspection**: Automatic data structure analysis with `df.info()` and `df.describe()` integration
 - **Interactive Mode**: Real-time interaction with your data through a command-line interface
 - **Test Suite**: Comprehensive test examples demonstrating all capabilities
+- **Automatic Path Configuration**: Paths are automatically configured based on the application directory
 
 ### Operations Supported
 - ✅ Read and display CSV data
@@ -54,40 +55,30 @@ Make sure Ollama is installed and running on your system. The project uses the `
 ollama pull qwen2.5-coder:3b
 ```
 
-### 4. Configure Settings
-Update `config.py` with your file paths and settings:
+### 4. Prepare Your CSV Files
+Place your CSV files in the `app/` directory. The application will automatically:
+- Look for `train.csv` and `test.csv` in the app directory
+- Create a `resultant/` directory for output files (if it doesn't exist)
 
-```python
-# File Paths
-DATA_DIR = r"D:\sheet_manipulator"  # Update to your data directory
-TRAIN_CSV = os.path.join(DATA_DIR, "train.csv")
-TEST_CSV = os.path.join(DATA_DIR, "test.csv")
-OUTPUT_DIR = DATA_DIR  # Update to your output directory
-
-# Model Configuration
-MODEL_ID = "ollama/qwen2.5-coder:3b"
-MODEL_API_KEY = "ollama"
-
-# Agent Configuration
-MAX_STEPS = 5  # Maximum steps for agent execution
-```
+**Note**: File paths are automatically configured by `main.py` based on the application directory. You don't need to manually edit `config.py` for basic usage.
 
 ## 🎯 Usage
 
-### Interactive Mode
+### Quick Start
 
-Run the application and choose from the menu:
+Run the application from the `app/` directory:
 
 ```bash
 python main.py
 ```
 
-**Menu Options:**
+You'll see a menu with the following options:
+
 1. Run basic tests with tracking
 2. Run comprehensive tests with tracking
 3. Run Titanic dataset comprehensive tests
 4. Interactive mode
-5. Enhanced Interactive mode (with automatic data inspection)
+5. Enhanced Interactive mode (with automatic data inspection) - **Recommended**
 6. Exit
 
 ### Enhanced Interactive Mode (Recommended)
@@ -110,6 +101,7 @@ python main.py
 
 ### Programmatic Usage
 
+#### Basic Agent
 ```python
 from agent import get_agent
 import config
@@ -122,8 +114,7 @@ result = agent.run("Read the first 5 rows of train.csv", max_steps=config.MAX_ST
 print(result)
 ```
 
-### Enhanced Agent with Data Inspection
-
+#### Enhanced Agent with Data Inspection
 ```python
 from agent.enhanced_csv_agent import run_with_data_inspection
 import config
@@ -131,11 +122,12 @@ import config
 # Run with automatic data inspection
 result = run_with_data_inspection(
     "Create a new CSV with Name, Age, and Survived columns",
-    file_paths=[config.TRAIN_CSV],
     max_steps=config.MAX_STEPS
 )
 print(result)
 ```
+
+**Note**: When using the enhanced agent programmatically, you may need to specify file paths if not using the default `train.csv` and `test.csv` files.
 
 ## 📁 Project Structure
 
@@ -154,10 +146,12 @@ app/
 │   ├── README.md                 # Detailed test documentation
 │   ├── test_tracker.py           # Test execution with tracking
 │   └── titanic_test_suite.py     # Comprehensive Titanic dataset tests
+├── resultant/                    # Output directory (created automatically)
 ├── config.py                     # Configuration settings
 ├── main.py                       # Main entry point
 ├── requirements.txt              # Python dependencies
-├── .gitignore                    # Git ignore rules
+├── train.csv                     # Input CSV file (place your file here)
+├── test.csv                      # Input CSV file (place your file here)
 └── README.md                     # This file
 ```
 
@@ -179,7 +173,7 @@ app/
 - `delete_csv_file(file_path)` - Delete a CSV file
 
 ### Enhanced Tools
-Enhanced versions of the above tools that automatically include data structure information for better accuracy.
+Enhanced versions of the above tools that automatically include data structure information (`df.info()` and `df.describe()`) for better accuracy.
 
 ## 📊 Example Use Cases
 
@@ -264,32 +258,39 @@ python examples/titanic_test_suite.py
 
 ## ⚙️ Configuration
 
-### Model Configuration
+### Automatic Configuration
+
+The application automatically configures file paths based on the application directory:
+- `TRAIN_CSV`: Set to `app/train.csv`
+- `TEST_CSV`: Set to `app/test.csv`
+- `OUTPUT_DIR`: Set to `app/resultant/`
+
+This configuration happens automatically in `main.py`, so you don't need to modify `config.py` for basic usage.
+
+### Manual Configuration (Advanced)
+
+If you need to customize the configuration, edit `config.py`:
+
+#### Model Configuration
 ```python
 MODEL_ID = "ollama/qwen2.5-coder:3b"  # LLM model to use
 MODEL_API_KEY = "ollama"               # API key for the model
 ```
 
-### File Paths
-```python
-DATA_DIR = r"D:\sheet_manipulator"     # Data directory
-TRAIN_CSV = "path/to/train.csv"        # Training CSV file
-TEST_CSV = "path/to/test.csv"          # Test CSV file
-OUTPUT_DIR = "path/to/output"          # Output directory
-```
-
-### Agent Configuration
+#### Agent Configuration
 ```python
 MAX_STEPS = 5              # Maximum steps for agent execution
 ADD_BASE_TOOLS = False     # Whether to add base tools
 ```
 
-### Display Settings
+#### Display Settings
 ```python
 DISPLAY_MAX_COLUMNS = None      # Maximum columns to display
 DISPLAY_WIDTH = None            # Display width
 DISPLAY_MAX_COLWIDTH = 50       # Maximum column width
 ```
+
+**Note**: If you modify `config.py` manually, be aware that `main.py` will override `TRAIN_CSV`, `TEST_CSV`, and `OUTPUT_DIR` when you run it. To use custom paths, modify `main.py` or use the agent programmatically without running `main.py`.
 
 ## 🐛 Troubleshooting
 
@@ -299,23 +300,33 @@ DISPLAY_MAX_COLWIDTH = 50       # Maximum column width
    - Ensure Ollama is installed and running
    - Check if the model is available: `ollama list`
    - Pull the model if missing: `ollama pull qwen2.5-coder:3b`
+   - Start Ollama service: `ollama serve` (if not running automatically)
 
 2. **File not found errors**
-   - Verify CSV files exist in the configured paths
-   - Update paths in `config.py` if needed
+   - Ensure CSV files (`train.csv`, `test.csv`) exist in the `app/` directory
+   - Check that you're running the application from the `app/` directory
+   - Verify file names match exactly (case-sensitive on Linux/Mac)
 
 3. **Permission errors**
-   - Ensure write permissions for the output directory
-   - Check file permissions for CSV files
+   - Ensure write permissions for the `resultant/` directory
+   - The directory is created automatically, but check permissions if issues occur
+   - On Linux/Mac, you may need: `chmod -R 755 resultant/`
 
 4. **Memory issues**
    - For large datasets, consider filtering data first
    - Reduce `MAX_STEPS` in config for simpler operations
+   - Process data in chunks if working with very large files
 
 5. **Model errors**
    - Verify Ollama is running: `ollama serve`
    - Check model availability: `ollama list`
-   - Try a different model if issues persist
+   - Try pulling the model again: `ollama pull qwen2.5-coder:3b`
+   - Check Ollama logs for detailed error messages
+
+6. **Path configuration issues**
+   - The application automatically configures paths when run via `main.py`
+   - If using the agent programmatically, ensure paths are set correctly
+   - Use absolute paths if relative paths don't work in your environment
 
 ## 🤝 Contributing
 
@@ -345,6 +356,3 @@ For questions, issues, or suggestions, please open an issue on GitHub.
 ---
 
 **Made with ❤️ for efficient CSV data manipulation**
-
-#   S m a r t - S h e e t - M a n i p u l a t o r  
- 
