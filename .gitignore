@@ -144,7 +144,11 @@ Desktop.ini
 # Project-specific
 # Output directory for generated CSV files
 resultant/
+results/
 answers/
+student/
+titanic/
+diagrams/
 
 # Input data files (uncomment if you don't want to track CSV files)
 # *.csv
