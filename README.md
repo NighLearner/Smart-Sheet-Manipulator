@@ -346,3 +346,5 @@ For questions, issues, or suggestions, please open an issue on GitHub.
 
 **Made with ❤️ for efficient CSV data manipulation**
 
+#   S m a r t - S h e e t - M a n i p u l a t o r  
+ 
