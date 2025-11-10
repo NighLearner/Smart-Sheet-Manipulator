@@ -1,0 +1,23 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local data outputs
+resultant/
+*.csv
+
+# Virtual envs
+.env
+.venv
+env/
+venv/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
+*.tmp
+
